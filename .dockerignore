@@ -1,0 +1,13 @@
+.git
+.gitignore
+*.zip
+*.tar
+*.tar.gz
+node_modules
+dist
+build
+.venv
+__pycache__/
+
+bench/*.csv
+!bench/metrics_schema.csv
