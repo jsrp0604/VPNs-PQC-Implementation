@@ -12,19 +12,13 @@ apply() {
   tc qdisc del dev "$iface" root 2>/dev/null || true
   case "$prof" in
     local)
-      tc qdisc add dev "$iface" root netem delay 1.5ms 0.5ms distribution normal ;;
+      tc qdisc add dev "$iface" root netem delay 1.5ms 0.5ms rate 1000mbit ;;
     realistic)
-      tc qdisc add dev "$iface" root handle 1: htb default 11
-      tc class add dev "$iface" parent 1: classid 1:1 htb rate 10mbit burst 15k
-      tc qdisc add dev "$iface" parent 1:1 handle 10: netem delay 50ms 10ms distribution normal ;;
+      tc qdisc add dev "$iface" root netem delay 50ms 10ms rate 10mbit ;;
     adverse)
-      tc qdisc add dev "$iface" root handle 1: htb default 11
-      tc class add dev "$iface" parent 1: classid 1:1 htb rate 5mbit burst 10k
-      tc qdisc add dev "$iface" parent 1:1 handle 10: netem delay 150ms loss 2.5% ;;
+      tc qdisc add dev "$iface" root netem delay 150ms loss 2.5% rate 5mbit ;;
     highlat)
-      tc qdisc add dev "$iface" root handle 1: htb default 11
-      tc class add dev "$iface" parent 1: classid 1:1 htb rate 2mbit burst 8k
-      tc qdisc add dev "$iface" parent 1:1 handle 10: netem delay 300ms loss 5% ;;
+      tc qdisc add dev "$iface" root netem delay 300ms loss 5% rate 2mbit ;;
     *)
       echo "Usage: $0 {local|realistic|adverse|highlat|clear|status}"; exit 1;;
   esac
