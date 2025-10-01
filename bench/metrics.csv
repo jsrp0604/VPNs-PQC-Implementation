@@ -1,1 +1,6 @@
 timestamp,protocol,scheme,kem,signature,client_ip,server_ip,cond_profile,latency_ms,handshake_ms,throughput_mbps,cpu_pct,mem_mb,sign_ms,verify_ms,encap_ms,decap_ms,packet_loss_pct,energy_joules
+2025-09-28T01:04:31-05:00,NA,NA,NA,NA,192.168.76.144,192.168.76.143,realistic,122.550,NA,8,40,NA,NA,NA,NA,NA,NA,NA
+2025-09-28T01:05:28-05:00,NA,NA,NA,NA,192.168.76.144,192.168.76.143,realistic,104.344,NA,9,18,NA,NA,NA,NA,NA,NA,NA
+2025-09-28T01:09:09-05:00,NA,NA,NA,NA,192.168.76.144,192.168.76.143,realistic,103.610,NA,8,90,NA,NA,NA,NA,NA,NA,NA
+2025-09-28T01:12:34-05:00,NA,NA,NA,NA,192.168.76.144,192.168.76.143,realistic,102.824,NA,9,17,NA,NA,NA,NA,NA,NA,NA
+2025-09-28T01:16:28-05:00,NA,NA,NA,NA,192.168.76.144,192.168.76.143,realistic,102.074,NA,8.87,NA,NA,NA,NA,NA,NA,NA
