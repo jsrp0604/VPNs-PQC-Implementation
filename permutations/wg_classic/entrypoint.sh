@@ -1,15 +1,19 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-ROLE=${ROLE:-server}   
-IFACE=wg0
+IFACE="${IFACE:-wg0}"                 
+CONF_PATH="${CONF_PATH:-/etc/wireguard/wg0.conf}"
 
-if [[ "$ROLE" == "server" ]]; then
-    echo "[wg_classic] Starting server..."
-    wg-quick up $IFACE
-    tail -f /dev/null  
-else
-    echo "[wg_classic] Starting client..."
-    wg-quick up $IFACE
-    tail -f /dev/null
-fi
+cleanup() {
+  echo "[wg] cleanup: bringing down ${IFACE} (if exists)"
+  wg-quick down "${IFACE}" 2>/dev/null || true
+  ip link del "${IFACE}" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+cleanup
+
+echo "[wg] up ${IFACE} using ${CONF_PATH}"
+wg-quick up "${IFACE}"
+
+tail -f /dev/null
