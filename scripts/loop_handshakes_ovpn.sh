@@ -2,10 +2,9 @@
 set -euo pipefail
 export LC_NUMERIC=C
 
-# Usage: loop_handshakes_ovpn.sh <server_tunnel_ip> [count] [profile_label] [throughput_every] [iperf_time]
 SERVER_TUN_IP="${1:-}"; COUNT="${2:-1000}"; PROFILE_LABEL="${3:-realistic}"
 THROUGHPUT_EVERY="${4:-50}"; IPERF_TIME="${5:-5}"
-DEBUG="${DEBUG:-0}"                         # <-- define DEBUG with default
+DEBUG="${DEBUG:-0}"                         
 
 if [[ -z "$SERVER_TUN_IP" ]]; then
   echo "Usage: $(basename "$0") <server_tunnel_ip> [count] [profile_label] [throughput_every] [iperf_time]"
@@ -23,7 +22,6 @@ echo "[loop] OpenVPN handshakes: $COUNT | profile: $PROFILE_LABEL | throughput_e
 for i in $(seq 1 "$COUNT"); do
   echo "[loop][$i] restarting client container to force TLS handshake"
 
-  # bounded restart so the loop can’t hang
   if ! timeout 8s docker restart -t 1 "$CLIENT_CONT" >/dev/null 2>&1; then
     echo "[loop][$i] WARN: restart slow; kill+start fallback"
     docker kill -s KILL "$CLIENT_CONT" >/dev/null 2>&1 || true
@@ -34,7 +32,6 @@ for i in $(seq 1 "$COUNT"); do
   START_NS="$(date +%s%N)"
   HANDSHAKE_MS="NA"; CLIENT_TUN_IP=""
 
-  # Wait up to 15s for tun0 and a first successful ping over the tunnel (inside container)
   for t in $(seq 1 150); do
     CLIENT_TUN_IP="$(docker exec "$CLIENT_CONT" sh -lc 'ip -4 -o addr show tun0 2>/dev/null | awk "{print \$4}" | cut -d/ -f1' || true)"
     [[ "$DEBUG" = "1" ]] && echo "[dbg][$i] t=$t tun0 ip=$CLIENT_TUN_IP"
@@ -43,21 +40,18 @@ for i in $(seq 1 "$COUNT"); do
         END_NS="$(date +%s%N)"
         HANDSHAKE_MS="$(awk -v s="$START_NS" -v e="$END_NS" 'BEGIN{printf "%.2f", (e-s)/1000000}')"
         [[ "$DEBUG" = "1" ]] && echo "[dbg][$i] handshake_ms=$HANDSHAKE_MS"
-        break                                  # <-- IMPORTANT: stop waiting once measured
+        break                                  
       fi
     fi
     sleep 0.1
   done
 
-  # If still empty, set IP to NA for CSV
   CLIENT_TUN_IP="${CLIENT_TUN_IP:-NA}"
 
-  # 5 pings snapshot (inside container to guarantee tunnel path)
   PINGN="$(docker exec "$CLIENT_CONT" sh -lc 'ping -c5 -i 0.2 -W2 '"$SERVER_TUN_IP"' 2>/dev/null' || true)"
   LATENCY_MS="$(echo "$PINGN" | awk -F'/' '/^rtt/ {print $5}')"; [[ -z "$LATENCY_MS" ]] && LATENCY_MS="NA"
   LOSS_PCT="$(echo "$PINGN" | sed -n 's/.* \([0-9.]\+\)% packet loss.*/\1/p')"; [[ -z "$LOSS_PCT" ]] && LOSS_PCT="NA"
 
-  # Throughput + resource snapshot (every k)
   THROUGHPUT="NA"; CPU_PCT="NA"; MEM_MB="NA"
   if (( THROUGHPUT_EVERY > 0 )) && (( i % THROUGHPUT_EVERY == 0 )) && [[ "$CLIENT_TUN_IP" != "NA" ]]; then
     TMP_JSON="$(mktemp)"; TMP_TIME="$(mktemp)"
