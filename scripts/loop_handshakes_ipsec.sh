@@ -7,6 +7,9 @@ THRU_EVERY="${4:-50}"; IPERF_TIME="${5:-5}"
 CSV="/data/metrics.csv"; PROTOCOL="IPsec"; SCHEME="classic"
 CLIENT_CONT="${CLIENT_CONT:-ipsec_cli}"
 
+KEM_LABEL=ECDHE-P256
+SIG_LABEL=RSA-2048 
+
 [[ -n "$SERVER_TUN_IP" ]] || { echo "Usage: $0 <server_tun_ip> [count] [profile] [throughput_every] [iperf_time]"; exit 1; }
 [[ -f "$CSV" ]] || echo "timestamp,protocol,scheme,kem,signature,client_ip,server_ip,cond_profile,latency_ms,handshake_ms,throughput_mbps,cpu_pct,mem_mb,sign_ms,verify_ms,encap_ms,decap_ms,packet_loss_pct,energy_joules" >> "$CSV"
 
@@ -55,7 +58,7 @@ for i in $(seq 1 "$COUNT"); do
   fi
 
   NOW="$(date -Iseconds)"
-  echo "$NOW,$PROTOCOL,$SCHEME,NA,NA,$CLIENT_IP,$SERVER_TUN_IP,$PROFILE,$LAT,$HANDSHAKE_MS,$THR,$CPU,$MEM,NA,NA,NA,NA,$LOSS,NA" >> "$CSV"
+  echo "$NOW,$PROTOCOL,$SCHEME,$KEM_LABEL,$SIG_LABEL,$CLIENT_IP,$SERVER_TUN_IP,$PROFILE,$LAT,$HANDSHAKE_MS,$THR,$CPU,$MEM,NA,NA,NA,NA,$LOSS,NA" >> "$CSV"
 
   sleep 0.2
 done

@@ -7,7 +7,10 @@ SERVER_TUN_IP="${1:-}"
 COUNT="${2:-1000}"
 PROFILE_LABEL="${3:-realistic}"
 THROUGHPUT_EVERY="${4:-50}"   
-IPERF_TIME="${5:-5}"          
+IPERF_TIME="${5:-5}"   
+
+KEM_LABEL=ECDH-X25519
+SIG_LABEL=none
 
 if [[ -z "$SERVER_TUN_IP" ]]; then
   echo "Usage: $(basename "$0") <server_tunnel_ip> [count] [profile_label] [throughput_every] [iperf_time]"
@@ -68,7 +71,7 @@ for i in $(seq 1 "$COUNT"); do
   fi
 
   NOW="$(date -Iseconds)"
-  echo "$NOW,$PROTOCOL,$SCHEME,NA,NA,$CLIENT_TUN_IP,$SERVER_TUN_IP,$PROFILE_LABEL,$LATENCY_MS,$HANDSHAKE_MS,$THROUGHPUT,$CPU_PCT,$MEM_MB,NA,NA,NA,NA,$LOSS_PCT,NA" >> "$CSV"
+  echo "$NOW,$PROTOCOL,$SCHEME,$KEM_LABEL,$SIG_LABEL,$CLIENT_IP,$SERVER_TUN_IP,$PROFILE,$LAT,$HANDSHAKE_MS,$THR,$CPU,$MEM,NA,NA,NA,NA,$LOSS,NA" >> "$CSV"
 
   sleep 0.15
 done
