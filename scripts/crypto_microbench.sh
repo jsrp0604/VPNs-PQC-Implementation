@@ -93,7 +93,8 @@ run_repeat bench_ecdh "X25519" "x25519" "ecdhx25519" "$TAG"
 run_repeat bench_ecdh "P-256"  "ecdhp256" "prime256v1" "$TAG"
 
 # pqc 
-run_repeat bench_kem kyber768   "$TAG"
+run_repeat bench_kem mlkem768 "$TAG"
+run_repeat bench_kem mceliece460896 "$TAG"
 run_repeat bench_sig dilithium2 "$TAG"
 
 echo "[microbench] wrote to $CSV; debug -> $DBG"

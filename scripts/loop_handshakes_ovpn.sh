@@ -15,7 +15,10 @@ if [[ -z "$SERVER_TUN_IP" ]]; then
 fi
 
 CSV="/data/metrics.csv"
-PROTOCOL="OpenVPN"; SCHEME="classic"
+KEM="${KEM:-NA}"
+SIG="${SIG:-NA}"
+SCHEME="${SCHEME:-classic}"
+PROTOCOL="OpenVPN" 
 CLIENT_CONT="${CLIENT_CONT:-ovpn_cli}"
 
 [[ -f "$CSV" ]] || echo "timestamp,protocol,scheme,kem,signature,client_ip,server_ip,cond_profile,latency_ms,handshake_ms,throughput_mbps,cpu_pct,mem_mb,sign_ms,verify_ms,encap_ms,decap_ms,packet_loss_pct,energy_joules" >> "$CSV"
@@ -70,7 +73,7 @@ for i in $(seq 1 "$COUNT"); do
   fi
 
   NOW="$(date -Iseconds)"
-  echo "$NOW,$PROTOCOL,$SCHEME,$KEM_LABEL,$SIG_LABEL,$CLIENT_IP,$SERVER_TUN_IP,$PROFILE,$LAT,$HANDSHAKE_MS,$THR,$CPU,$MEM,NA,NA,NA,NA,$LOSS,NA" >> "$CSV"
+  echo "$NOW,$PROTOCOL,$SCHEME,$KEM,$SIG,$CLIENT_IP,$SERVER_TUN_IP,$PROFILE,$LAT,$HANDSHAKE_MS,$THR,$CPU,$MEM,NA,NA,NA,NA,$LOSS,NA" >> "$CSV"
 
   sleep 0.2
 done
