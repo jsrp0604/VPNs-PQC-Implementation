@@ -31,23 +31,29 @@ echo "[loop] Method: Restart client container to force new IKE SA"
 
 CLIENT_IP="10.30.0.2"
 
+if ! sudo docker ps -a | grep -q "$CLIENT_CONT"; then
+  echo "[loop] Creating initial client container..."
+  sudo docker run -d --name "$CLIENT_CONT" \
+    --privileged --network host \
+    --cap-add=NET_ADMIN \
+    --cap-add=NET_RAW \
+    --device=/dev/net/tun \
+    -e ROLE=client \
+    -v /data:/data \
+    ipsec_hybrid:local
+  sleep 3
+fi
+
 for i in $(seq 1 "$COUNT"); do
-  if ! timeout 10s docker restart -t 2 "$CLIENT_CONT" >/dev/null 2>&1; then
-    echo "[loop][$i] WARN: restart slow; kill+start fallback"
-    docker kill -s KILL "$CLIENT_CONT" >/dev/null 2>&1 || true
-    docker start "$CLIENT_CONT" >/dev/null 2>&1 || true
-    sleep 1
-  fi
-  
-  sleep 2
-  
+  sudo docker stop "$CLIENT_CONT" >/dev/null 2>&1 || true
+  sudo docker start "$CLIENT_CONT" >/dev/null 2>&1 || true
+  sleep 3
+    
   START_NS="$(date +%s%N)"
   HANDSHAKE_MS="NA"
   
   for t in $(seq 1 100); do
-    docker exec "$CLIENT_CONT" swanctl --initiate --child net-net >/dev/null 2>&1 || true
-    
-    if docker exec "$CLIENT_CONT" ping -c1 -W1 -I 10.30.0.2 "$SERVER_TUN_IP" >/dev/null 2>&1; then
+    if sudo docker exec "$CLIENT_CONT" ping -c1 -W1 -I 10.30.0.2 "$SERVER_TUN_IP" >/dev/null 2>&1; then
       END_NS="$(date +%s%N)"
       HANDSHAKE_MS="$(awk -v s="$START_NS" -v e="$END_NS" 'BEGIN{printf "%.2f", (e-s)/1000000}')"
       break
@@ -61,10 +67,10 @@ for i in $(seq 1 "$COUNT"); do
     echo -n "[loop][$i] FAIL"
   fi
   
-  docker exec "$CLIENT_CONT" ping -c2 -W1 -I 10.30.0.2 "$SERVER_TUN_IP" >/dev/null 2>&1 || true
+  sudo docker exec "$CLIENT_CONT" ping -c2 -W1 -I 10.30.0.2 "$SERVER_TUN_IP" >/dev/null 2>&1 || true
   sleep 0.15
   
-  PING5="$(docker exec "$CLIENT_CONT" ping -c5 -i 0.3 -W2 -I 10.30.0.2 "$SERVER_TUN_IP" 2>/dev/null || true)"
+  PING5="$(sudo docker exec "$CLIENT_CONT" ping -c5 -i 0.3 -W2 -I 10.30.0.2 "$SERVER_TUN_IP" 2>/dev/null || true)"
   LAT="$(echo "$PING5" | awk -F'/' '/^rtt/ {print $5}')"
   [[ -z "$LAT" ]] && LAT="NA"
   LOSS="$(echo "$PING5" | sed -n 's/.* \([0-9.]\+\)% packet loss.*/\1/p')"
@@ -78,7 +84,7 @@ for i in $(seq 1 "$COUNT"); do
     TMP_TIME="$(mktemp)"
     
     /usr/bin/time -v -o "$TMP_TIME" \
-      docker exec "$CLIENT_CONT" iperf3 -c "$SERVER_TUN_IP" -B 10.30.0.2 -t "$IPERF_TIME" --json > "$TMP_JSON" 2>/dev/null || true
+      sudo docker exec "$CLIENT_CONT" sh -lc "iperf3 -c $SERVER_TUN_IP -B 10.30.0.2 -t $IPERF_TIME --json" > "$TMP_JSON" || true
     
     BPS="$(jq -r '.end.sum_received.bits_per_second // .end.sum_sent.bits_per_second // empty' "$TMP_JSON" 2>/dev/null || true)"
     [[ -n "${BPS:-}" ]] && THR="$(awk -v b="$BPS" 'BEGIN{printf "%.2f", b/1000000}')"

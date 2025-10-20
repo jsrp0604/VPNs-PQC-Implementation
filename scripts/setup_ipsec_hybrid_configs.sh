@@ -33,38 +33,38 @@ connections {
   ipsec-hybrid {
     local_addrs = 192.168.76.143
     remote_addrs = 192.168.76.144
-    
+
     local {
-      auth = pubkey
+      auth  = pubkey
       certs = server.crt
-      id = "C=EC, O=VPN-PQC, CN=ipsec-hybrid-server"
+      id    = "C=EC, O=VPN-PQC, CN=ipsec-hybrid-server"
     }
-    
+
     remote {
       auth = pubkey
-      id = "C=EC, O=VPN-PQC, CN=ipsec-hybrid-client"
+      id   = "C=EC, O=VPN-PQC, CN=ipsec-hybrid-client"
     }
-    
+
     children {
       net-net {
-        local_ts = 10.30.0.0/24
-        remote_ts = 10.30.0.0/24
-        
+        local_ts   = 10.30.0.1/32
+        remote_ts  = 10.30.0.2/32
+
         esp_proposals = aes256gcm16-esn,aes256gcm16-noesn
-        
+
         start_action = trap
         close_action = trap
-        
+
         rekey_time = 3600
-        life_time = 3900
+        life_time  = 3900
       }
     }
-    
-    version = 2
-    mobike = no
+
+    version     = 2
+    mobike      = no
     reauth_time = 7200
-    rekey_time = 7200
-    
+    rekey_time  = 7200
+
     proposals = aes256gcm16-prfsha384-curve25519-ke1_mlkem768,aes256gcm16-prfsha384-ecp256-ke1_mlkem768,aes256gcm16-prfsha256-ecp256
   }
 }
@@ -101,39 +101,40 @@ connections {
   ipsec-hybrid {
     local_addrs = 192.168.76.144
     remote_addrs = 192.168.76.143
-    
+
     local {
-      auth = pubkey
+      auth  = pubkey
       certs = client.crt
-      id = "C=EC, O=VPN-PQC, CN=ipsec-hybrid-client"
+      id    = "C=EC, O=VPN-PQC, CN=ipsec-hybrid-client"
     }
-    
+
     remote {
       auth = pubkey
-      id = "C=EC, O=VPN-PQC, CN=ipsec-hybrid-server"
+      id   = "C=EC, O=VPN-PQC, CN=ipsec-hybrid-server"
     }
-    
+
     children {
       net-net {
-        local_ts = 10.30.0.0/24
-        remote_ts = 10.30.0.0/24
-        
+        # Client end: 10.30.0.2/32 <-> 10.30.0.1/32
+        local_ts   = 10.30.0.2/32
+        remote_ts  = 10.30.0.1/32
+
         esp_proposals = aes256gcm16-esn,aes256gcm16-noesn
-        
-        start_action = none
+
+        start_action = trap    
         close_action = none
-        
+
         rekey_time = 3600
-        life_time = 3900
+        life_time  = 3900
       }
     }
-    
-    version = 2
-    mobike = no
+
+    version     = 2
+    mobike      = no
     reauth_time = 7200
-    rekey_time = 7200
-    
-    proposals = aes256gcm16-prfsha384-curve25519+ml_kem_768,aes256gcm16-prfsha384-ecp256+ml_kem_768,aes256gcm16-prfsha256-ecp256
+    rekey_time  = 7200
+
+    proposals = aes256gcm16-prfsha384-curve25519-ke1_mlkem768,aes256gcm16-prfsha384-ecp256-ke1_mlkem768,aes256gcm16-prfsha256-ecp256
   }
 }
 
