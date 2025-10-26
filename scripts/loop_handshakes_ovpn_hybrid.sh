@@ -11,7 +11,7 @@ IPERF_TIME="${5:-5}"
 CSV="/data/metrics.csv"
 KEM="${KEM:-X25519-MLKEM768}"
 SIG="${SIG:-ECDSA-P256}"
-SCHEME="${SCHEME:-proxy_pq}"
+SCHEME="${SCHEME:-hybrid}"
 PROTOCOL="OpenVPN"
 CLIENT_CONT_OVPN="${CLIENT_CONT_OVPN:-ovpn_cli_hybrid}"
 CLIENT_CONT_PROXY="${CLIENT_CONT_PROXY:-pqtls_cli}"
@@ -67,24 +67,47 @@ for i in $(seq 1 "$COUNT"); do
   
   THR="NA"; CPU="NA"; MEM="NA"
   if (( THRU_EVERY > 0 )) && (( i % THRU_EVERY == 0 )) && [[ "$CLIENT_IP" != "NA" ]]; then
-    TMP_JSON="$(mktemp)"; TMP_TIME="$(mktemp)"
-    /usr/bin/time -v -o "$TMP_TIME" \
-      iperf3 -c "$SERVER_TUN_IP" -B "$CLIENT_IP" -t "$IPERF_TIME" --json > "$TMP_JSON" 2>/dev/null || true
-    
+    TMP_JSON="$(mktemp)"
+    TMP_STATS="$(mktemp)"
+
+    # Start docker stats in background
+    (docker stats --no-stream --format "{{.CPUPerc}},{{.MemUsage}}" "$CLIENT_CONT_OVPN" > "$TMP_STATS") &
+    STATS_PID=$!
+
+    # Run iperf3 inside OpenVPN container
+    docker exec "$CLIENT_CONT_OVPN" sh -lc "iperf3 -c $SERVER_TUN_IP -B $CLIENT_IP -t $IPERF_TIME --json" > "$TMP_JSON" || true
+
+    # Wait for stats and clean up
+    kill $STATS_PID 2>/dev/null || true
+    wait $STATS_PID 2>/dev/null || true
+
+    # Parse throughput
     BPS="$(jq -r '.end.sum_received.bits_per_second // .end.sum_sent.bits_per_second // empty' "$TMP_JSON" 2>/dev/null || true)"
     [[ -n "${BPS:-}" ]] && THR="$(awk -v b="$BPS" 'BEGIN{printf "%.2f", b/1000000}')"
-    
-    CPU="$(awk -F': ' '/Percent of CPU/ {gsub("%","",$2); print $2}' "$TMP_TIME" 2>/dev/null || true)"
+
+    # Parse docker stats
+    if [[ -f "$TMP_STATS" ]] && [[ -s "$TMP_STATS" ]]; then
+      CPU="$(cut -d',' -f1 "$TMP_STATS" | tr -d '%' | head -1)"
+      MEM_RAW="$(cut -d',' -f2 "$TMP_STATS" | awk '{print $1}' | head -1)"
+
+      # Convert MiB/GiB to MB
+      if echo "$MEM_RAW" | grep -qi "GiB"; then
+        MEM="$(echo "$MEM_RAW" | sed 's/GiB//' | awk '{printf "%.2f", $1 * 1024}')"
+      elif echo "$MEM_RAW" | grep -qi "MiB"; then
+        MEM="$(echo "$MEM_RAW" | sed 's/MiB//' | awk '{printf "%.2f", $1}')"
+      else
+        MEM="NA"
+      fi
+    fi
+
     [[ -z "$CPU" ]] && CPU="NA"
-    
-    RSS="$(awk -F': ' '/Maximum resident set size/ {print $2}' "$TMP_TIME" 2>/dev/null || true)"
-    [[ -n "$RSS" ]] && MEM="$(awk -v k="$RSS" 'BEGIN{printf "%.2f", k/1024}')" || MEM="NA"
-    
-    rm -f "$TMP_JSON" "$TMP_TIME"
+    [[ -z "$MEM" ]] && MEM="NA"
+
+    rm -f "$TMP_JSON" "$TMP_STATS"
   fi
   
   NOW="$(date -Iseconds)"
-  echo "$NOW,$PROTOCOL,$SCHEME,$KEM,$SIG,$CLIENT_IP,$SERVER_TUN_IP,$PROFILE,$LAT,$HANDSHAKE_MS,$THR,$CPU,$MEM,NA,NA,NA,NA,$LOSS,NA" >> "$CSV"
+  echo "$NOW,$PROTOCOL,$SCHEME,$KEM,$SIG,$CLIENT_IP,$SERVER_TUN_IP,$PROFILE,$LAT,$HANDSHAKE_MS,$THR,$CPU,$MEM,$LOSS" >> "$CSV"
   
   sleep 0.3
 done
