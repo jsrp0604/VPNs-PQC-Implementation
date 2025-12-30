@@ -12,7 +12,6 @@ sleep 1
 
 if [ ! -f /data/wg_hybrid/server/secret.key ]; then
   echo "[server] ERROR: Server secret key not found"
-  echo "        Run: bash scripts/setup_wg_hybrid.sh"
   exit 1
 fi
 
@@ -20,7 +19,7 @@ sudo touch /data/wg_hybrid/server/public.key
 sudo touch /data/wg_hybrid/client/public.key
 sudo chmod 644 /data/wg_hybrid/server/public.key /data/wg_hybrid/client/public.key
 
-echo "[server] Starting Rosenpass daemon..."
+echo "[server] Starting Rosenpass daemon"
 sudo docker run -d --rm \
   --name wg_srv_hybrid \
   --network host \
@@ -61,6 +60,3 @@ sudo ip link set wg0 up
 sudo docker exec -d wg_srv_hybrid iperf3 -s -B 10.30.0.1 2>/dev/null || true
 
 echo "[server] Stack ready"
-echo "       Rosenpass: UDP 0.0.0.0:9999"
-echo "       WireGuard: wg0 (10.30.0.1/24)"
-sudo docker logs wg_srv_hybrid 2>&1 | tail -10

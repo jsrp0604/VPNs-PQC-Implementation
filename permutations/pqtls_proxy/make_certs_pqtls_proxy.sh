@@ -59,5 +59,4 @@ cp "$BASE/ca-cert.pem" "$BASE/client/ca.pem"
 
 chmod 600 "$BASE"/server/key.pem "$BASE"/client/key.pem
 
-echo "[pqtls-certs] Generated ECDSA P-256 certificates in $BASE"
 ls -lh "$BASE"/{server,client}/

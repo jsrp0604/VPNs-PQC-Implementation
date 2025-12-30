@@ -2,11 +2,6 @@
 set -euo pipefail
 export LC_NUMERIC=C
 
-if [[ $# -lt 2 ]]; then
-  echo "Usage: $(basename "$0") <server_tunnel_ip> <profile>  # e.g. 10.0.0.1 realistic"
-  exit 1
-fi
-
 SERVER_TUN_IP="$1"      
 PROFILE="$2"            
 PROTOCOL="WireGuard"

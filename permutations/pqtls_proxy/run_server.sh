@@ -26,7 +26,7 @@ if ! sudo docker ps | grep -q ovpn_srv_hybrid; then
   exit 1
 fi
 
-echo "[server] ✓ OpenVPN on localhost:11194"
+echo "[server] OpenVPN on localhost:11194"
 
 sudo docker run -d --rm \
   --name pqtls_srv \
@@ -41,10 +41,7 @@ sudo docker run -d --rm \
     TCP:127.0.0.1:11194 2>&1 | tee /data/ovpn_hybrid/pqtls_server_debug.log'
 
 sleep 2
-echo "[server] ✓ PQ-TLS proxy (debug mode) on ${SERVER_IP}:1194"
+echo "[server] PQ-TLS proxy (debug mode) on ${SERVER_IP}:1194"
 
 sudo docker exec -d ovpn_srv_hybrid iperf3 -s -B 10.20.0.1
-
-echo "[server] ✓ iperf3 server on 10.20.0.1"
-echo "[server] Debug log: /data/ovpn_hybrid/pqtls_server_debug.log"
 sudo docker ps | grep -E 'ovpn_srv_hybrid|pqtls_srv'

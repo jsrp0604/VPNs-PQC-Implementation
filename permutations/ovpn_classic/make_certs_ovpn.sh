@@ -6,14 +6,12 @@ EASYRSA_SRC="/usr/share/easy-rsa"
 EASYRSA_WORK="$ROOT/easyrsa"              
 
 if ! command -v openvpn >/dev/null 2>&1 || [ ! -d "$EASYRSA_SRC" ]; then
-  echo "[prep] Installing openvpn & easy-rsa..."
   sudo apt-get update -y
   sudo apt-get install -y openvpn easy-rsa
 fi
 
 mkdir -p "$EASYRSA_WORK"
 if [ ! -x "$EASYRSA_WORK/easyrsa" ]; then
-  echo "[prep] Seeding Easy-RSA flat workspace at $EASYRSA_WORK"
   sudo cp -a "$EASYRSA_SRC/." "$EASYRSA_WORK/"
   sudo chmod +x "$EASYRSA_WORK/easyrsa"
 fi
@@ -28,7 +26,6 @@ set_var EASYRSA_REQ_CN  "ovpn-ca"
 EOF
 
 if [ -d pki ]; then
-  echo "[pki] Cleaning old PKI (keeping workspace files)"
   rm -rf pki
 fi
 
@@ -52,7 +49,3 @@ install -m 0600 pki/private/client.key           "$ROOT/client/pki/private/clien
 
 install -m 0600 ta.key                           "$ROOT/server/ta.key"
 install -m 0600 ta.key                           "$ROOT/client/ta.key"
-
-echo "[pki] Done."
-echo " Server: $ROOT/server/pki/{ca.crt,issued/server.crt,private/server.key}, ta.key"
-echo " Client: $ROOT/client/pki/{ca.crt,issued/client.crt,private/client.key}, ta.key"

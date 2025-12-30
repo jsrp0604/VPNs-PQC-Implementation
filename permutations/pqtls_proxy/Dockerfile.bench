@@ -1,0 +1,74 @@
+FROM ubuntu:22.04 AS builder
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake git ninja-build ca-certificates \
+    libssl-dev wget astyle
+
+# build
+WORKDIR /build/liboqs
+RUN git clone --depth 1 --branch 0.11.0 \
+    https://github.com/open-quantum-safe/liboqs.git . && \
+    mkdir build && cd build && \
+    cmake -GNinja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DBUILD_SHARED_LIBS=ON \
+      -DOQS_USE_OPENSSL=ON \
+      -DOQS_BUILD_ONLY_LIB=OFF \
+      .. && \
+    ninja && ninja install
+
+# benchmark tools
+RUN mkdir -p /opt/liboqs-tools && \
+    cp /build/liboqs/build/tests/speed_kem /opt/liboqs-tools/ && \
+    cp /build/liboqs/build/tests/speed_sig /opt/liboqs-tools/ && \
+    chmod +x /opt/liboqs-tools/*
+
+# build oqs-provider
+WORKDIR /build/oqsprovider
+RUN git clone --depth 1 --branch 0.7.0 \
+    https://github.com/open-quantum-safe/oqs-provider.git . && \
+    cmake -S . -B _build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DOQS_PROVIDER_BUILD_STATIC=OFF && \
+    cmake --build _build && \
+    cmake --install _build
+
+RUN mkdir -p /opt/oqs-provider && \
+    if [ -f /usr/local/lib/ossl-modules/oqsprovider.so ]; then \
+      cp /usr/local/lib/ossl-modules/oqsprovider.so /opt/oqs-provider/oqsprovider.so; \
+    elif [ -f /usr/lib/x86_64-linux-gnu/ossl-modules/oqsprovider.so ]; then \
+      cp /usr/lib/x86_64-linux-gnu/ossl-modules/oqsprovider.so /opt/oqs-provider/oqsprovider.so; \
+    elif [ -f /usr/local/lib64/ossl-modules/oqsprovider.so ]; then \
+      cp /usr/local/lib64/ossl-modules/oqsprovider.so /opt/oqs-provider/oqsprovider.so; \
+    else \
+      echo "ERROR: oqsprovider.so not found"; \
+      find /usr -name oqsprovider.so 2>/dev/null; \
+      exit 1; \
+    fi
+
+# complete image
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl ca-certificates iproute2 iputils-ping \
+    procps socat time jq bc && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/lib/liboqs*.so* /usr/local/lib/
+COPY --from=builder /usr/local/include/oqs /usr/local/include/oqs
+COPY --from=builder /opt/liboqs-tools/* /usr/local/bin/
+
+COPY --from=builder /opt/oqs-provider/oqsprovider.so /usr/local/lib/ossl-modules/oqsprovider.so
+
+RUN mkdir -p /usr/local/lib/ossl-modules && \
+    ldconfig
+
+ENV OPENSSL_MODULES=/usr/local/lib/ossl-modules
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+WORKDIR /app
+CMD ["/bin/bash"]

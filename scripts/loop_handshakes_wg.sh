@@ -17,12 +17,6 @@ PROTOCOL="WireGuard"
 CLIENT_CONT="${CLIENT_CONT:-wg_cli}"
 CLIENT_CONF="/data/wg_classic/client/wg0.conf"
 
-[[ -n "$SERVER_TUN_IP" ]] || {
-  echo "Usage: $0 <server_tun_ip> [count] [profile] [throughput_every] [iperf_time]"
-  echo "Example: $0 10.20.0.1 1000 realistic 50 5"
-  exit 1
-}
-
 [[ -f "$CSV" ]] || echo "timestamp,protocol,scheme,kem,signature,client_ip,server_ip,cond_profile,latency_ms,handshake_ms,throughput_mbps,cpu_pct,mem_mb,packet_loss_pct" >> "$CSV"
 
 if ! ip link show wg0 >/dev/null 2>&1; then
@@ -36,7 +30,6 @@ wg-quick strip "$CLIENT_CONF" > "$TMP_STRIPPED"
 echo "[loop] WireGuard classic handshakes: $COUNT | profile: $PROFILE"
 echo "[loop] KEM: $KEM_LABEL | SIG: $SIG_LABEL | SCHEME: $SCHEME"
 echo "[loop] throughput_every: $THROUGHPUT_EVERY | iperf_time: ${IPERF_TIME}s"
-echo "[loop] Method: wg syncconf to reset connection"
 
 for i in $(seq 1 "$COUNT"); do
   sudo wg syncconf wg0 "$TMP_STRIPPED"
@@ -56,27 +49,25 @@ for i in $(seq 1 "$COUNT"); do
     TMP_JSON="$(mktemp)"
     TMP_STATS="$(mktemp)"
 
-    # Start docker stats in background
+    # docker stats 
     (sudo docker stats --no-stream --format "{{.CPUPerc}},{{.MemUsage}}" "$CLIENT_CONT" > "$TMP_STATS") &
     STATS_PID=$!
 
-    # Run iperf3 inside container (NOT on host)
+    # iperf3 
     sudo docker exec "$CLIENT_CONT" sh -lc "iperf3 -c $SERVER_TUN_IP -B $CLIENT_IP -t $IPERF_TIME --json" > "$TMP_JSON" || true
 
-    # Wait for stats and clean up
     kill $STATS_PID 2>/dev/null || true
     wait $STATS_PID 2>/dev/null || true
 
-    # Parse throughput
+    # parsing
     BPS="$(jq -r '.end.sum_received.bits_per_second // .end.sum_sent.bits_per_second // empty' "$TMP_JSON" 2>/dev/null || true)"
     [[ -n "${BPS:-}" ]] && THR="$(awk -v b="$BPS" 'BEGIN{printf "%.2f", b/1000000}')"
 
-    # Parse docker stats
+    # docker stats
     if [[ -f "$TMP_STATS" ]] && [[ -s "$TMP_STATS" ]]; then
       CPU="$(cut -d',' -f1 "$TMP_STATS" | tr -d '%' | head -1)"
       MEM_RAW="$(cut -d',' -f2 "$TMP_STATS" | awk '{print $1}' | head -1)"
 
-      # Convert MiB/GiB to MB
       if echo "$MEM_RAW" | grep -qi "GiB"; then
         MEM="$(echo "$MEM_RAW" | sed 's/GiB//' | awk '{printf "%.2f", $1 * 1024}')"
       elif echo "$MEM_RAW" | grep -qi "MiB"; then
@@ -99,4 +90,4 @@ for i in $(seq 1 "$COUNT"); do
 done
 
 rm -f "$TMP_STRIPPED"
-echo "[loop] Done. Logged $COUNT rows to $CSV"
+echo "[loop] Logged $COUNT rows to $CSV"

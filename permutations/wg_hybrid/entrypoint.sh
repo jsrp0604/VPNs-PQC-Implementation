@@ -4,11 +4,7 @@ set -euo pipefail
 ROLE="${ROLE:-client}"
 SERVER_IP="${SERVER_IP:-192.168.76.143}"
 
-echo "[wg_hybrid] Starting role=$ROLE"
-
 if [[ "$ROLE" == "server" ]]; then
-    echo "[wg_hybrid] Setting up WireGuard interface wg1"
-    
     ip link del wg1 2>/dev/null || true
     
     if [[ ! -f /data/wg_hybrid/server/wg_private.key ]]; then
@@ -21,7 +17,6 @@ if [[ "$ROLE" == "server" ]]; then
     
     if [[ -f /data/wg_hybrid/client/wg_public.key ]]; then
         CLIENT_WG_PUB=$(cat /data/wg_hybrid/client/wg_public.key)
-        echo "[wg_hybrid] Adding client peer: $CLIENT_WG_PUB"
         wg set wg1 peer "$CLIENT_WG_PUB" allowed-ips 10.31.0.2/32
     else
         echo "[wg_hybrid] WARNING: Client WG public key not found!"
@@ -47,9 +42,7 @@ if [[ "$ROLE" == "server" ]]; then
             wg set wg1 peer "$CLIENT_WG_PUB" preshared-key /tmp/wg1.psk 2>/dev/null || true
         fi
     done
-else
-    echo "[wg_hybrid] Setting up WireGuard interface wg1"
-    
+else    
     ip link del wg1 2>/dev/null || true
     
     if [[ ! -f /data/wg_hybrid/client/wg_private.key ]]; then
@@ -62,7 +55,6 @@ else
     
     if [[ -f /data/wg_hybrid/server/wg_public.key ]]; then
         SERVER_WG_PUB=$(cat /data/wg_hybrid/server/wg_public.key)
-        echo "[wg_hybrid] Adding server peer: $SERVER_WG_PUB"
         wg set wg1 peer "$SERVER_WG_PUB" endpoint ${SERVER_IP}:10000 allowed-ips 10.31.0.1/32 persistent-keepalive 25
     else
         echo "[wg_hybrid] WARNING: Server WG public key not found!"

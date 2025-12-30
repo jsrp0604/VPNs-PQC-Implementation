@@ -1,4 +1,3 @@
-# ====== BUILDER =======
 FROM ubuntu:22.04 AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -67,7 +66,6 @@ RUN strip /usr/local/sbin/openvpn || true \
  && strip /usr/local/lib/liboqs*.so* || true \
  && strip /opt/oqs/ossl-modules/oqsprovider.so || true
 
-# ====== RUNTIME =======
 FROM pqc-base:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 

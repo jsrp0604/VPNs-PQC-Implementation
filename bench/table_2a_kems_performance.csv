@@ -1,0 +1,5 @@
+Algoritmo,Categoría,Operación Cliente (ms),Operación Servidor (ms),Tiempo Total (ms)
+Classic-McEliece-460896,KEM,0.0651 ± 0.0059,118.8591 ± 7.0665,118.9242 ± 7.0665
+ML-KEM-768,KEM,0.0375 ± 0.0032,0.0670 ± 0.0024,0.1046 ± 0.0039
+P-256,ECDH,0.0476 ± 0.0004,0.0476 ± 0.0004,0.0952 ± 0.0009
+X25519,ECDH,0.0322 ± 0.0015,0.0322 ± 0.0015,0.0643 ± 0.0029

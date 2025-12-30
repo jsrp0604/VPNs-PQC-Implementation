@@ -1,0 +1,5 @@
+Algoritmo,Categoría,Firma (ms),Verificación (ms),Tiempo Total (ms)
+ECDSA-P256,Firma Digital,0.0284 ± 0.0011,0.0631 ± 0.0021,0.0915 ± 0.0024
+Ed25519,Firma Digital,0.0406 ± 0.0019,0.1102 ± 0.0071,0.1508 ± 0.0073
+ML-DSA-65,Firma Digital,0.1434 ± 0.0046,0.0654 ± 0.0031,0.2088 ± 0.0056
+RSA-2048,Firma Digital,0.6079 ± 0.0182,0.0171 ± 0.0006,0.6250 ± 0.0182

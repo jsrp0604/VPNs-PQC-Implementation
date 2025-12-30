@@ -9,9 +9,6 @@ LOG="${LOG_DIR}/ovpn_${ROLE}.log"
 mkdir -p "$LOG_DIR"
 : > "$LOG"
 
-echo "[entrypoint] ROLE=$ROLE" | tee -a "$LOG"
-echo "[entrypoint] Using OPENSSL_MODULES=${OPENSSL_MODULES:-<unset>}" | tee -a "$LOG"
-
 echo "[entrypoint] OpenSSL providers:" | tee -a "$LOG"
 openssl list -providers 2>&1 | tee -a "$LOG" || true
 
@@ -42,8 +39,6 @@ EXTRA_ARGS=()
 if [[ -n "$SELECTED_GROUP" ]]; then
   EXTRA_ARGS+=( "--tls-groups" "$SELECTED_GROUP" )
 fi
-
-echo "[entrypoint] conf=$CONF_FILE | tls-groups=${SELECTED_GROUP:-<none>}" | tee -a "$LOG"
 
 exec openvpn \
   --config "$CONF_FILE" \

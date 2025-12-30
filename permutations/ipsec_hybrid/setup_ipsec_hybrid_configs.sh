@@ -5,8 +5,6 @@ BASE="/data/ipsec_hybrid"
 mkdir -p "$BASE/server/pki/"{cacerts,certs,private}
 mkdir -p "$BASE/client/pki/"{cacerts,certs,private}
 
-echo "[setup] Creating IPsec hybrid configuration files..."
-
 cat > "$BASE/server/strongswan.conf" <<'EOF'
 charon {
   load_modular = yes
@@ -143,10 +141,3 @@ secrets {
 EOF
 
 echo "[setup] client/swanctl.conf"
-
-echo ""
-echo "[setup] Configuration files created successfully"
-echo ""
-echo "Directory structure:"
-tree -L 3 "$BASE" 2>/dev/null || find "$BASE" -type f | sed 's|^|  |'
-echo ""
